@@ -11,8 +11,6 @@ class Man {
         this.favoriteBooks = favoriteBooks;
     }
 
-    public Man(){}
-
     public String getName() {
         return name;
     }

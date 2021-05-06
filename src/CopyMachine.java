@@ -1,57 +1,51 @@
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class CopyMachine {
 
-    public static Object deepCopy(Object object) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public static Object deepCopy(Object object) throws IntrospectionException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
 
         Class<?> aClass = object.getClass();
 
-        Object copiedObject = object.getClass().getDeclaredConstructor().newInstance();
 
-        List<Method> publicMethods = Arrays.stream(aClass.getMethods()).collect(Collectors.toList());
 
-        List<Method> getters = publicMethods.stream()
-                .collect(Collectors.groupingBy(method -> method.getName().startsWith("get") && method.getParameterCount() == 0))
-                .values()
-                .stream()
-                .flatMap(Collection::stream)
+        PropertyDescriptor[] propertyDescriptors = Introspector.getBeanInfo(aClass, Object.class).getPropertyDescriptors();
+
+        List<Method> getters = Arrays.stream(propertyDescriptors)
+                .map(PropertyDescriptor::getReadMethod)
                 .collect(Collectors.toList());
 
-        Map<String, Method> setters = publicMethods.stream()
-                .collect(Collectors.groupingBy(method -> method.getName().startsWith("set") && method.getParameterCount() == 1))
-                .values()
-                .stream()
-                .flatMap(Collection::stream)
-                .collect(Collectors.toMap(Method::getName, method -> method));
+        List<Method> setters = Arrays.stream(propertyDescriptors)
+                .map(PropertyDescriptor::getWriteMethod)
+                .collect(Collectors.toList());
 
-        Map<String, Object> gettersInvokationMap = getters.stream().collect(Collectors.toMap(Method::getName, method -> {
-            Object invoke = new Object();
+        List<Object> parameters = getters.stream().map(getter -> {
             try {
-                invoke = method.invoke(object);
-                return invoke;
+                return getter.invoke(object);
             } catch (IllegalAccessException | InvocationTargetException e) {
                 e.printStackTrace();
             }
-            return invoke;
-        }));
+            return null;
+        }).collect(Collectors.toList());
 
-        setters.forEach((s, o) -> {
-             if (gettersInvokationMap.containsKey("get" + s.substring(2))) {
-                 try {
-                     o.invoke(copiedObject, gettersInvokationMap.get("get" + s.substring(2)));
-                 } catch (IllegalAccessException | InvocationTargetException e) {
-                     e.printStackTrace();
-                 }
-             }
-        });
+        List<? extends Class<?>> gettersReturnTypes = parameters.stream().map(Object::getClass).collect(Collectors.toList());
 
-        return copiedObject;
+        Class[] classes = new Class[gettersReturnTypes.size()];
+        gettersReturnTypes.toArray(classes);
+
+        Constructor<?> constructor = Arrays.stream(aClass.getDeclaredConstructors()).collect(Collectors.toList())
+                .stream().max(Comparator.comparing(Constructor::getParameterCount)).get();
+
+        List<Class<?>> constructorParametersTypes = Arrays.stream(constructor.getParameterTypes()).collect(Collectors.toList());
+
+        Object o = constructor.newInstance();
+
+        return constructorParametersTypes;
     }
-
 }

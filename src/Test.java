@@ -14,6 +14,8 @@ public class Test {
 
         Man man = new Man("name1", 99, books);
         System.out.println(CopyMachine.deepCopy(man));
+//        Man man1 = new Man(null, (Integer)null, null);
+//        System.out.println(man1);
 
         /*Object copiedMan = CopyMachine.deepCopy(man);
 

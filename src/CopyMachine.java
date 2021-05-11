@@ -2,10 +2,12 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CopyMachine {
 
@@ -13,6 +15,9 @@ public class CopyMachine {
 
         Class<?> aClass = object.getClass();
 
+        List<Field> declaredFields = Arrays.asList(aClass.getDeclaredFields());
+        List<? extends Class<? extends Field>> collect = declaredFields.stream().map(Field::getClass).collect(Collectors.toList());
+        Method[] declaredMethods = aClass.getDeclaredMethods();
 
 
         PropertyDescriptor[] propertyDescriptors = Introspector.getBeanInfo(aClass, Object.class).getPropertyDescriptors();
@@ -20,6 +25,7 @@ public class CopyMachine {
         List<Method> getters = Arrays.stream(propertyDescriptors)
                 .map(PropertyDescriptor::getReadMethod)
                 .collect(Collectors.toList());
+
 
         List<Method> setters = Arrays.stream(propertyDescriptors)
                 .map(PropertyDescriptor::getWriteMethod)
@@ -44,8 +50,17 @@ public class CopyMachine {
 
         List<Class<?>> constructorParametersTypes = Arrays.stream(constructor.getParameterTypes()).collect(Collectors.toList());
 
-        Object o = constructor.newInstance();
+        Object[] collect1 = constructorParametersTypes.stream()
+                .map(o -> {
+                    if (o.isPrimitive()){
+                        return 0; //check type and assign the value https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html
+                    }
+                    return null;
+                })
+                .toArray();
 
-        return constructorParametersTypes;
+        return collect1;
+        //return constructorParametersTypes;
     }
+
 }

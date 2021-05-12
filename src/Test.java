@@ -9,7 +9,8 @@ import java.util.stream.Collectors;
 
 public class Test {
 
-    public static void main(String[] args) throws NoSuchMethodException, IntrospectionException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public static void main(String[] args) throws IntrospectionException, InvocationTargetException,
+            InstantiationException, IllegalAccessException {
 
         CopyMachine copyMachine = new CopyMachine();
 
